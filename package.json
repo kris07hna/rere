@@ -1,0 +1,17 @@
+{
+  "name": "falconvision-standalone-broadcaster",
+  "version": "2.0.0",
+  "description": "Standalone 30 FPS surveillance edge video node powered by Agora SD-RTN",
+  "scripts": {
+    "start": "npx serve ."
+  },
+  "keywords": [
+    "agora",
+    "webrtc",
+    "cctv",
+    "surveillance",
+    "streaming"
+  ],
+  "author": "FalconVision",
+  "license": "MIT"
+}

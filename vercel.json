@@ -1,0 +1,24 @@
+{
+  "version": 2,
+  "cleanUrls": true,
+  "rewrites": [
+    { "source": "/api/v1/agora/config", "destination": "/api/token" },
+    { "source": "/api/v1/agora/telemetry", "destination": "/api/telemetry" },
+    { "source": "/api/v1/agora/quick-add", "destination": "/api/telemetry" }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Permissions-Policy",
+          "value": "camera=*, microphone=*, geolocation=*, display-capture=*"
+        },
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,1016 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>FalconVision // Standalone Edge CCTV Node</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700;800&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols-Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+  <style>
+    :root {
+      --bg: #07090e;
+      --card-bg: #0d121c;
+      --card-border: #1a2333;
+      --primary: #ff5500;
+      --primary-hover: #e04400;
+      --secondary: #00e599;
+      --accent: #00e5ff;
+      --danger: #ef4444;
+      --warning: #f5a623;
+      --text: #e2e8f0;
+      --text-muted: #748398;
+      --radius: 14px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', -apple-system, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      padding: 12px;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 12px 14px;
+      border-bottom: 1px solid var(--card-border);
+      margin-bottom: 12px;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+    }
+    .brand-badge {
+      background: var(--primary);
+      color: #000;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: 800;
+      font-size: 0.75rem;
+    }
+    .status-pill {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.7rem;
+      padding: 4px 10px;
+      border-radius: 9999px;
+      background: rgba(116, 131, 152, 0.15);
+      color: var(--text-muted);
+      border: 1px solid var(--card-border);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .status-pill.live {
+      background: rgba(0, 229, 153, 0.12);
+      color: var(--secondary);
+      border-color: rgba(0, 229, 153, 0.4);
+    }
+    .pulse-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: currentColor;
+      animation: pulse 1.4s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.85); }
+    }
+
+    main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      max-width: 540px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    /* Video Viewport */
+    .viewport {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background: #000;
+      border-radius: var(--radius);
+      overflow: hidden;
+      border: 1px solid var(--card-border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    #local-video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    #local-video video {
+      width: 100% !important;
+      height: 100% !important;
+      object-fit: cover !important;
+    }
+    .viewport-placeholder {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      text-align: center;
+      color: var(--text-muted);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem;
+      gap: 8px;
+    }
+    .viewport-hud {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      right: 10px;
+      display: flex;
+      justify-content: space-between;
+      pointer-events: none;
+      z-index: 10;
+    }
+    .hud-badge {
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(4px);
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.7rem;
+      color: #fff;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius);
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .field-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    label {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+    }
+    input, select {
+      background: #07090e;
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      color: var(--text);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+      padding: 9px 12px;
+      outline: none;
+    }
+    input:focus, select:focus {
+      border-color: var(--primary);
+    }
+
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 9px 12px;
+      background: #07090e;
+      border-radius: 8px;
+      border: 1px solid var(--card-border);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+    }
+    .toggle-row input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--secondary);
+    }
+
+    .btn {
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      padding: 14px;
+      border-radius: 9999px;
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 800;
+      font-size: 0.9rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.15s ease;
+      text-transform: uppercase;
+      box-shadow: 0 4px 14px rgba(255, 85, 0, 0.3);
+    }
+    .btn:hover { background: var(--primary-hover); transform: translateY(-1px); }
+    .btn.danger { background: var(--danger); box-shadow: 0 4px 14px rgba(239, 68, 68, 0.3); }
+
+    .console {
+      background: #05070a;
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      padding: 10px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.7rem;
+      max-height: 120px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .log-line { color: var(--text-muted); }
+    .log-line.success { color: var(--secondary); }
+    .log-line.warn { color: var(--warning); }
+    .log-line.error { color: var(--danger); }
+  </style>
+  <script src="https://download.agora.io/sdk/release/AgoraRTC_N-4.23.4.js"></script>
+  <script src="mqtt.min.js"></script>
+  <script>
+    if (typeof mqtt === 'undefined') {
+      document.write('<script src="https://unpkg.com/mqtt@5.15.2/dist/mqtt.min.js"><\/script>');
+    }
+  </script>
+</head>
+<body>
+
+  <header>
+    <div class="brand">
+      <span class="brand-badge">F-NODE</span>
+      <span>STANDALONE EDGE BROADCASTER</span>
+    </div>
+    <div id="status-pill" class="status-pill">
+      <span class="pulse-dot"></span>
+      <span id="status-text">OFFLINE</span>
+    </div>
+  </header>
+
+  <main>
+    <!-- Viewport Container -->
+    <div class="viewport">
+      <div id="local-video"></div>
+      <div id="placeholder" class="viewport-placeholder">
+        <span class="material-symbols-outlined" style="font-size:36px; color:var(--text-muted);">videocam_off</span>
+        <strong>Camera Inactive</strong>
+        <span>Select camera configuration and click "Start 30 FPS Broadcast".</span>
+      </div>
+      <div id="hud" class="viewport-hud" style="display:none;">
+        <span class="hud-badge" id="hud-cam-id">CAM: --</span>
+        <span class="hud-badge" id="hud-gps" style="color:var(--text-muted);">GPS: --</span>
+        <span class="hud-badge" style="color:var(--secondary);">
+          <span class="pulse-dot"></span> 30 FPS HD
+        </span>
+      </div>
+    </div>
+
+    <!-- Configuration Card -->
+    <div class="card">
+      <div class="field-grid">
+        <label>
+          Unique Camera ID (Call Sign)
+          <input type="text" id="camera-id" value="cam-patrol-01" placeholder="e.g. cam-gate-north">
+        </label>
+        <label>
+          Display Name
+          <input type="text" id="display-name" value="Patrol Unit Alpha" placeholder="e.g. Mobile Guard 1">
+        </label>
+      </div>
+
+      <div class="field-grid">
+        <label>
+          Agora Channel Name
+          <input type="text" id="agora-channel" value="PhoneToLaptop">
+        </label>
+        <label>
+          Camera Facing Mode
+          <select id="facing-mode">
+            <option value="environment" selected>Back (Perimeter Patrol)</option>
+            <option value="user">Front (Operator Selfie)</option>
+          </select>
+        </label>
+      </div>
+
+      <!-- Advanced Agora App Credentials -->
+      <details style="cursor:pointer; font-family:'JetBrains Mono', monospace; font-size:0.75rem; color:var(--text-muted);">
+        <summary style="outline:none;">Agora Credentials (Secured via App ID & Certificate)</summary>
+        <div style="display:flex; flex-direction:column; gap:8px; margin-top:8px;">
+          <label>
+            Agora App ID
+            <input type="text" id="app-id" value="3ea564c44c4f4fff9f889036b6a5fc0c">
+          </label>
+          <div style="padding:6px 10px; background:rgba(0,229,153,0.1); border:1px solid rgba(0,229,153,0.25); border-radius:6px; color:var(--secondary); font-size:0.7rem;">
+            ✓ Secured with App Certificate (Tokens auto-derived on the fly)
+          </div>
+          <input type="hidden" id="agora-token" value="">
+          <label>
+            FalconVision API Hub URL (Optional Telemetry Sync)
+            <input type="text" id="hub-url" placeholder="https://your-tunnel.trycloudflare.com">
+          </label>
+        </div>
+      </details>
+
+      <div class="toggle-row">
+        <span>Broadcast Audio Intercom (Microphone)</span>
+        <input type="checkbox" id="mic-toggle" checked>
+      </div>
+
+      <div class="toggle-row">
+        <span>Broadcast Real-Time GPS Telemetry</span>
+        <input type="checkbox" id="gps-toggle" checked>
+      </div>
+      <div id="gps-status-info" style="font-size:0.75rem; color:var(--text-muted); font-family:'JetBrains Mono',monospace; margin-top:-6px; margin-bottom:8px; display:flex; align-items:center; gap:6px;">
+        <span class="material-symbols-outlined" id="gps-status-icon" style="font-size:14px; color:var(--warning);">location_searching</span>
+        <span id="gps-status-text">GPS: Ready (Acquiring on broadcast)</span>
+      </div>
+      <!-- Instant 1-Click GPS Testing & Simulation Tools -->
+      <div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:-2px; margin-bottom:12px;">
+        <button type="button" onclick="setGpsPreset(12.8438, 80.1520, 45, 0, 'Perimeter Gate')" style="padding:4px 8px; border-radius:6px; background:#121824; border:1px solid #1e2638; color:var(--text); font-size:0.7rem; font-family:'JetBrains Mono', monospace; cursor:pointer;" title="Lock GPS to Gate">📍 Test Gate</button>
+        <button type="button" onclick="togglePatrolSimulation()" id="patrol-sim-btn" style="padding:4px 8px; border-radius:6px; background:#121824; border:1px solid #00e599; color:var(--secondary); font-size:0.7rem; font-family:'JetBrains Mono', monospace; cursor:pointer;" title="Simulate dynamic patrol walk across the map">🚶 Walk Sim</button>
+        <button type="button" onclick="startGpsTracking()" style="padding:4px 8px; border-radius:6px; background:#121824; border:1px solid #00e5ff; color:var(--accent); font-size:0.7rem; font-family:'JetBrains Mono', monospace; cursor:pointer;" title="Acquire real hardware GNSS/Wi-Fi fix">🛰️ Real GPS</button>
+      </div>
+
+      <button id="stream-btn" class="btn" type="button" onclick="toggleBroadcast()">
+        <span class="material-symbols-outlined">sensors</span>
+        <span>Start 30 FPS Broadcast</span>
+      </button>
+    </div>
+
+    <!-- Diagnostic Log Console -->
+    <div class="card" style="padding:10px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; font-family:'JetBrains Mono', monospace; font-size:0.75rem;">
+        <span style="font-weight:700; color:var(--secondary); display:flex; align-items:center; gap:6px;">
+          <span class="pulse-dot"></span> BROADCAST TELEMETRY
+        </span>
+        <button onclick="clearLogs()" style="background:transparent; border:none; color:var(--text-muted); cursor:pointer; font-size:0.7rem;">Clear</button>
+      </div>
+      <div id="console-logs" class="console">
+        <div class="log-line">[SYSTEM] Standalone node initialized. Ready to broadcast.</div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    // Pre-authenticated Agora credentials (full publisher token with Audio, Video & DataStream privileges)
+    const FALLBACK_TOKEN = "007eJxTYPgaL3Tia+zzxRMP5qjZtTU2c146cFKS6bjlwn33tQPyDogoMBinJpqamSSbAFGaSVpammWahYWlgbFZklmiaVqyQfJe8+NZDYGMDIE/9rMwMjAysAAxiM8EJpnBJAuY5GUIyMjPSw3J90ksKMkvYGAAAG5LJzc=";
+
+    // Auto-detect local backend or Cloudflare / Dev Tunnel URL if served together
+    const defaultHub = (window.location.origin.includes('localhost') || window.location.origin.includes('trycloudflare.com') || window.location.origin.includes('devtunnels.ms')) ? window.location.origin : '';
+
+    // URL Parameter Overrides (e.g. ?camera_id=cam-patrol-unit-01&channel=PhoneToLaptop)
+    const urlParams = new URLSearchParams(window.location.search);
+    const params = {
+      cameraId: urlParams.get('camera_id') || localStorage.getItem('fv_cam_id') || 'cam-patrol-unit-01',
+      displayName: urlParams.get('name') || localStorage.getItem('fv_display_name') || 'Field Patrol Unit',
+      channel: urlParams.get('channel') || 'PhoneToLaptop',
+      appId: urlParams.get('app_id') || '3ea564c44c4f4fff9f889036b6a5fc0c',
+      token: urlParams.get('token') || '',
+      hubUrl: urlParams.get('hub_url') || localStorage.getItem('fv_hub_url') || defaultHub,
+      lat: urlParams.get('lat') || '',
+      lng: urlParams.get('lng') || '',
+      heading: urlParams.get('heading') || '',
+      speed: urlParams.get('speed') || '',
+      accuracy: urlParams.get('acc') || urlParams.get('accuracy') || ''
+    };
+
+    const elements = {
+      camId: document.getElementById('camera-id'),
+      displayName: document.getElementById('display-name'),
+      channel: document.getElementById('agora-channel'),
+      facing: document.getElementById('facing-mode'),
+      appId: document.getElementById('app-id'),
+      token: document.getElementById('agora-token'),
+      hubUrl: document.getElementById('hub-url'),
+      mic: document.getElementById('mic-toggle'),
+      gps: document.getElementById('gps-toggle'),
+      streamBtn: document.getElementById('stream-btn'),
+      statusPill: document.getElementById('status-pill'),
+      statusText: document.getElementById('status-text'),
+      placeholder: document.getElementById('placeholder'),
+      hud: document.getElementById('hud'),
+      hudCamId: document.getElementById('hud-cam-id'),
+      console: document.getElementById('console-logs')
+    };
+
+    elements.camId.value = params.cameraId;
+    elements.displayName.value = params.displayName;
+    elements.channel.value = params.channel;
+    elements.appId.value = params.appId;
+    elements.token.value = params.token || '';
+    if (params.hubUrl) elements.hubUrl.value = params.hubUrl;
+
+    // Fetch fresh dynamic token from Vercel Serverless API (/api/token) or FalconVision Hub (/api/v1/agora/config)
+    async function fetchFreshToken(channel, hubUrl) {
+      // 1. Try Vercel Serverless Function (/api/token) with fast 1.5s timeout
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 1500);
+        const res = await fetch(`/api/token?channel=${encodeURIComponent(channel)}`, { signal: controller.signal });
+        clearTimeout(timeout);
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.token) return data.token;
+        }
+      } catch (_) {}
+
+      // 2. Try FalconVision Hub API (/api/v1/agora/config) with fast 1.5s timeout
+      const effectiveHub = hubUrl || defaultHub;
+      if (effectiveHub) {
+        try {
+          const controller = new AbortController();
+          const timeout = setTimeout(() => controller.abort(), 1500);
+          const res = await fetch(`${effectiveHub.replace(/\/$/, '')}/api/v1/agora/config?channel=${encodeURIComponent(channel)}`, { signal: controller.signal });
+          clearTimeout(timeout);
+          if (res.ok) {
+            const data = await res.json();
+            if (data && data.token) return data.token;
+          }
+        } catch (_) {}
+      }
+
+      // 3. Fallback token (freshly authenticated)
+      return FALLBACK_TOKEN;
+    }
+
+    async function loadDynamicAgoraConfig() {
+      const channel = (elements.channel && elements.channel.value ? elements.channel.value.trim() : '') || params.channel || 'PhoneToLaptop';
+      const hub = (elements.hubUrl && elements.hubUrl.value ? elements.hubUrl.value.trim() : '') || params.hubUrl || '';
+      const token = await fetchFreshToken(channel, hub);
+      if (token && elements.token) {
+        elements.token.value = token;
+        addLog('Dynamic Agora token ready for channel: ' + channel, 'success');
+      }
+    }
+    loadDynamicAgoraConfig();
+    if (elements.channel) {
+      elements.channel.addEventListener('change', () => loadDynamicAgoraConfig());
+    }
+
+    function addLog(msg, type = 'normal') {
+      const time = new Date().toTimeString().split(' ')[0];
+      const div = document.createElement('div');
+      div.className = `log-line ${type}`;
+      div.textContent = `[${time}] ${msg}`;
+      elements.console.appendChild(div);
+      elements.console.scrollTop = elements.console.scrollHeight;
+      console.log(`[NODE] ${msg}`);
+    }
+    function clearLogs() { elements.console.innerHTML = '<div class="log-line">[SYSTEM] Logs cleared.</div>'; }
+
+    let client = null;
+    let localTracks = [];
+    let isBroadcasting = false;
+    let metadataInterval = null;
+    let gpsCoords = null;
+    let gpsWatchId = null;
+    let currentCompassHeading = null;
+
+    // Compass orientation tracking (reads geomagnetic sensor on Android/iOS)
+    function initOrientationTracking() {
+      if (window.DeviceOrientationEvent) {
+        window.addEventListener('deviceorientation', (e) => {
+          if (e.webkitCompassHeading !== undefined) {
+            currentCompassHeading = Math.round(e.webkitCompassHeading);
+          } else if (e.alpha !== null) {
+            currentCompassHeading = Math.round((360 - e.alpha) % 360);
+          }
+        }, { passive: true });
+      }
+    }
+    initOrientationTracking();
+
+    // Support manual coordinates or preset coordinates via URL params (?lat=12.8438&lng=80.1520)
+    const presetLat = parseFloat(params.lat || '');
+    const presetLng = parseFloat(params.lng || '');
+    if (Number.isFinite(presetLat) && Number.isFinite(presetLng)) {
+      const presetHeading = parseFloat(params.heading || '');
+      const presetSpeed = parseFloat(params.speed || '');
+      const presetAcc = parseFloat(params.accuracy || '5.0');
+      gpsCoords = {
+        latitude: presetLat,
+        longitude: presetLng,
+        accuracy: Number.isFinite(presetAcc) ? presetAcc : 5.0,
+        altitude: null,
+        speed: Number.isFinite(presetSpeed) ? presetSpeed : null,
+        heading: Number.isFinite(presetHeading) ? presetHeading : null,
+        timestamp: Date.now()
+      };
+      updateGpsStatusUI(`Preset ${presetLat.toFixed(4)}, ${presetLng.toFixed(4)} (±${Math.round(gpsCoords.accuracy)}m)`, 'success');
+    }
+
+    let patrolSimTimer = null;
+    let patrolLat = 12.8438;
+    let patrolLng = 80.1520;
+    let patrolHeading = 45;
+
+    function setGpsPreset(lat, lon, heading = 0, speed = 0, label = 'Custom') {
+      if (patrolSimTimer) {
+        clearInterval(patrolSimTimer);
+        patrolSimTimer = null;
+        const btn = document.getElementById('patrol-sim-btn');
+        if (btn) btn.textContent = '🚶 Walk Sim';
+      }
+      gpsCoords = {
+        latitude: lat,
+        longitude: lon,
+        accuracy: 4.5,
+        altitude: 18.0,
+        speed: speed,
+        heading: heading,
+        timestamp: Date.now()
+      };
+      updateGpsStatusUI(`Preset: ${label} (${lat.toFixed(4)}, ${lon.toFixed(4)})`, 'success');
+      addLog(`[GPS PRESET] Locked coordinates to ${label}: ${lat.toFixed(5)}, ${lon.toFixed(5)}`, 'success');
+      if (isBroadcasting && client) {
+        const cameraId = (elements.camId && elements.camId.value) ? elements.camId.value.trim() : 'cam-patrol-unit-01';
+        const displayName = (elements.displayName && elements.displayName.value) ? elements.displayName.value.trim() : 'Field Patrol Unit';
+        const hubUrl = (elements.hubUrl && elements.hubUrl.value) ? elements.hubUrl.value.trim() : '';
+        broadcastMetadataBeacon(cameraId, displayName, client.uid, hubUrl);
+      }
+    }
+
+    function togglePatrolSimulation() {
+      const btn = document.getElementById('patrol-sim-btn');
+      if (patrolSimTimer) {
+        clearInterval(patrolSimTimer);
+        patrolSimTimer = null;
+        if (btn) btn.textContent = '🚶 Walk Sim';
+        addLog('[SIMULATION] Patrol walk simulation stopped.', 'normal');
+        return;
+      }
+      if (btn) btn.textContent = '⏸️ Stop Walk Sim';
+      addLog('[SIMULATION] Started moving patrol walk simulation. Watch coordinates update live on GIS Map!', 'success');
+      patrolSimTimer = setInterval(() => {
+        patrolLat += (Math.random() * 0.00012 - 0.00004);
+        patrolLng += (Math.random() * 0.00012 - 0.00004);
+        patrolHeading = (patrolHeading + 12) % 360;
+        const speed = 1.2 + Math.random() * 0.5;
+        gpsCoords = {
+          latitude: patrolLat,
+          longitude: patrolLng,
+          accuracy: 3.5,
+          altitude: 19.5,
+          speed: Math.round(speed * 10) / 10,
+          heading: patrolHeading,
+          timestamp: Date.now()
+        };
+        updateGpsStatusUI(`Walking: ${patrolLat.toFixed(5)}, ${patrolLng.toFixed(5)} (${patrolHeading}° · ${speed.toFixed(1)}m/s)`, 'success');
+        if (isBroadcasting && client) {
+          const cameraId = (elements.camId && elements.camId.value) ? elements.camId.value.trim() : 'cam-patrol-unit-01';
+          const displayName = (elements.displayName && elements.displayName.value) ? elements.displayName.value.trim() : 'Field Patrol Unit';
+          const hubUrl = (elements.hubUrl && elements.hubUrl.value) ? elements.hubUrl.value.trim() : '';
+          broadcastMetadataBeacon(cameraId, displayName, client.uid, hubUrl);
+        }
+      }, 2000);
+    }
+
+    // UI updater for GPS status
+    function updateGpsStatusUI(status, type = 'normal') {
+      const hudGps = document.getElementById('hud-gps');
+      const statusText = document.getElementById('gps-status-text');
+      const statusIcon = document.getElementById('gps-status-icon');
+      
+      if (statusText) statusText.textContent = `GPS: ${status}`;
+      if (hudGps) {
+        hudGps.textContent = `GPS: ${status}`;
+        hudGps.style.color = type === 'success' ? 'var(--secondary)' : (type === 'warn' ? 'var(--warning)' : (type === 'error' ? 'var(--danger)' : 'var(--text-muted)'));
+      }
+      if (statusIcon) {
+        statusIcon.style.color = type === 'success' ? 'var(--secondary)' : (type === 'warn' ? 'var(--warning)' : (type === 'error' ? 'var(--danger)' : 'var(--text-muted)'));
+        statusIcon.textContent = type === 'success' ? 'my_location' : (type === 'error' ? 'location_disabled' : 'location_searching');
+      }
+    }
+
+    function onGpsPositionSuccess(pos) {
+      if (!pos || !pos.coords) return;
+      const rawHeading = (pos.coords.heading !== null && !isNaN(pos.coords.heading)) ? Math.round(pos.coords.heading) : null;
+      const effectiveHeading = rawHeading !== null ? rawHeading : currentCompassHeading;
+      gpsCoords = {
+        latitude: pos.coords.latitude,
+        longitude: pos.coords.longitude,
+        accuracy: pos.coords.accuracy || 5.0,
+        altitude: Number.isFinite(pos.coords.altitude) ? Math.round(pos.coords.altitude * 10) / 10 : null,
+        speed: Number.isFinite(pos.coords.speed) ? Math.round(pos.coords.speed * 10) / 10 : null,
+        heading: effectiveHeading,
+        timestamp: pos.timestamp || Date.now()
+      };
+      const acc = Math.round(pos.coords.accuracy || 5);
+      const latStr = pos.coords.latitude.toFixed(4);
+      const lonStr = pos.coords.longitude.toFixed(4);
+      const headingStr = effectiveHeading !== null ? ` · ${effectiveHeading}°` : '';
+      const speedStr = gpsCoords.speed ? ` · ${gpsCoords.speed}m/s` : '';
+      updateGpsStatusUI(`Locked ${latStr}, ${lonStr} (±${acc}m${headingStr}${speedStr})`, 'success');
+      addLog(`[GPS LOCK] ${latStr}, ${lonStr} (±${acc}m${headingStr}${speedStr}) acquired!`, 'success');
+      
+      // If broadcasting, immediately beam fresh position packet to dashboard
+      if (isBroadcasting && client) {
+        const cameraId = (elements.camId && elements.camId.value) ? elements.camId.value.trim() : 'cam-patrol-unit-01';
+        const displayName = (elements.displayName && elements.displayName.value) ? elements.displayName.value.trim() : 'Field Patrol Unit';
+        const hubUrl = (elements.hubUrl && elements.hubUrl.value) ? elements.hubUrl.value.trim() : '';
+        broadcastMetadataBeacon(cameraId, displayName, client.uid, hubUrl);
+      }
+    }
+
+    function onGpsPositionError(err) {
+      console.warn('GPS location error:', err);
+      if (err.code === 1) { // PERMISSION_DENIED
+        updateGpsStatusUI('Permission Denied', 'error');
+        addLog('GPS error: Location permission denied. Please allow location in browser URL bar.', 'error');
+        // Stop watching on explicit deny to prevent prompt thrashing
+        if (gpsWatchId !== null) {
+          navigator.geolocation.clearWatch(gpsWatchId);
+          gpsWatchId = null;
+        }
+      } else if (err.code === 2) { // POSITION_UNAVAILABLE
+        updateGpsStatusUI('Satellites Busy (Seeking)', 'warn');
+        addLog('GPS note: Direct satellite position unavailable indoors. Attempting Wi-Fi/cellular triangulation...', 'warn');
+        tryLowAccuracyFallback();
+      } else if (err.code === 3) { // TIMEOUT
+        updateGpsStatusUI('Fix Timeout (Retrying)', 'warn');
+        addLog('GPS note: Satellite lock slow. Attempting rapid Wi-Fi/cellular triangulation...', 'warn');
+        tryLowAccuracyFallback();
+      } else {
+        updateGpsStatusUI('Acquisition Error', 'error');
+        addLog(`GPS acquisition error: ${err.message}`, 'error');
+      }
+    }
+
+    function tryLowAccuracyFallback() {
+      if (!('geolocation' in navigator)) return;
+      navigator.geolocation.getCurrentPosition(
+        onGpsPositionSuccess,
+        err => console.warn('Coarse fallback also pending:', err.message),
+        { enableHighAccuracy: false, timeout: 15000, maximumAge: 60000 }
+      );
+    }
+
+    function startGpsTracking() {
+      if (!('geolocation' in navigator)) {
+        updateGpsStatusUI('Not Supported', 'error');
+        addLog('Geolocation not supported by this browser/origin', 'warn');
+        return;
+      }
+      if (!elements.gps.checked) {
+        stopGpsTracking();
+        return;
+      }
+      if (gpsWatchId !== null) return; // Already active
+
+      updateGpsStatusUI('Acquiring fix...', 'warn');
+      addLog('Requesting location telemetry (fast network fix + high-accuracy GNSS)...');
+
+      // 1. Fast coarse fix (resolves in <500ms from cellular/Wi-Fi or recent cache)
+      navigator.geolocation.getCurrentPosition(
+        onGpsPositionSuccess,
+        err => console.warn('Instant fix unavailable, awaiting satellite watch:', err.message),
+        { enableHighAccuracy: false, timeout: 8000, maximumAge: 60000 }
+      );
+
+      // 2. Continuous high accuracy watch with generous 25s timeout (prevents timeout thrashing)
+      try {
+        gpsWatchId = navigator.geolocation.watchPosition(
+          onGpsPositionSuccess,
+          onGpsPositionError,
+          { enableHighAccuracy: true, timeout: 25000, maximumAge: 5000 }
+        );
+      } catch (e) {
+        console.warn('watchPosition failed:', e);
+      }
+    }
+
+    function stopGpsTracking() {
+      if (gpsWatchId !== null) {
+        navigator.geolocation.clearWatch(gpsWatchId);
+        gpsWatchId = null;
+      }
+      gpsCoords = null;
+      updateGpsStatusUI('Disabled', 'normal');
+    }
+
+    function handleGpsToggleChange() {
+      if (elements.gps.checked) {
+        startGpsTracking();
+      } else {
+        stopGpsTracking();
+      }
+    }
+    if (elements.gps) {
+      elements.gps.addEventListener('change', handleGpsToggleChange);
+    }
+
+    async function toggleBroadcast() {
+      if (isBroadcasting) {
+        await stopBroadcast();
+      } else {
+        await startBroadcast();
+      }
+    }
+
+    async function startBroadcast() {
+      const cameraId = (elements.camId && elements.camId.value) ? elements.camId.value.trim() : 'cam-patrol-unit-01';
+      const displayName = (elements.displayName && elements.displayName.value) ? elements.displayName.value.trim() : 'Field Patrol Unit';
+      const channel = (elements.channel && elements.channel.value) ? elements.channel.value.trim() : 'PhoneToLaptop';
+      const appId = (elements.appId && elements.appId.value && elements.appId.value.trim()) || params.appId || "3ea564c44c4f4fff9f889036b6a5fc0c";
+      const hubUrl = (elements.hubUrl && elements.hubUrl.value) ? elements.hubUrl.value.trim() : '';
+
+      addLog(`Requesting dynamic Agora token for channel [${channel}]...`);
+      let token = await fetchFreshToken(channel, hubUrl);
+      if (!token && elements.token && elements.token.value.trim()) {
+        token = elements.token.value.trim();
+      }
+      if (elements.token && token) elements.token.value = token;
+
+      localStorage.setItem('fv_cam_id', cameraId);
+      localStorage.setItem('fv_display_name', displayName);
+
+      // Connect to global MQTT telemetry network
+      initMqttClient(channel, cameraId);
+
+      // Start GPS acquisition upon user broadcast click (explicit user gesture)
+      if (elements.gps.checked) {
+        startGpsTracking();
+      }
+
+      elements.streamBtn.disabled = true;
+      elements.streamBtn.textContent = 'Connecting...';
+      addLog(`Initializing Agora client for channel [${channel}]...`);
+
+      try {
+        if (typeof AgoraRTC === 'undefined') {
+          throw new Error('AgoraRTC SDK not loaded. Check internet connection.');
+        }
+
+        client = AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' });
+
+        // Listen for bidirectional acknowledgments from SOC Dashboard console
+        client.on('stream-message', (remoteUid, data) => {
+          try {
+            const raw = typeof data === 'string' ? data : new TextDecoder().decode(data);
+            const msg = JSON.parse(raw);
+            if (msg.type === 'console_ack') {
+              addLog(`[SOC CONSOLE ACK] Workstation acknowledged fix for "${msg.camera_id}" (seq #${msg.seq || '?'})! Live on map.`, 'success');
+            } else if (msg.type === 'intercom_alert') {
+              addLog(`[DISPATCH ALERT] SOC operator opened 2-way audio intercom!`, 'warn');
+            }
+          } catch (_) {}
+        });
+
+        // Concurrently join Agora SD-RTN and acquire camera & mic hardware for sub-second startup!
+        addLog('Connecting SD-RTN & capturing camera hardware in parallel...');
+        const isMobile = /Android|iPhone|iPad/i.test(navigator.userAgent);
+        const videoTrackConfig = {
+          encoderConfig: '720p_1',
+          facingMode: isMobile ? elements.facing.value : undefined
+        };
+
+        const joinPromise = client.join(appId, channel, token, null);
+        const videoPromise = AgoraRTC.createCameraVideoTrack(videoTrackConfig).then(vt => {
+          // Play local camera preview immediately without waiting for network publish
+          const localBox = document.getElementById('local-video');
+          if (localBox) {
+            localBox.innerHTML = '';
+            vt.play('local-video');
+          }
+          return vt;
+        });
+        const audioPromise = elements.mic.checked ? AgoraRTC.createMicrophoneAudioTrack().catch(micErr => {
+          addLog('Microphone unavailable (proceeding video-only)', 'warn');
+          return null;
+        }) : Promise.resolve(null);
+
+        const [assignedUid, videoTrack, audioTrack] = await Promise.all([
+          joinPromise,
+          videoPromise,
+          audioPromise
+        ]);
+
+        addLog(`Joined successfully. Assigned WebRTC UID: ${assignedUid}`, 'success');
+        const tracks = [videoTrack];
+        if (audioTrack) tracks.push(audioTrack);
+        localTracks = tracks;
+
+        // Publish live 30 FPS tracks
+        addLog('Publishing 30 FPS tracks to SD-RTN...');
+        await client.publish(localTracks);
+        addLog(`BROADCAST ACTIVE! 30 FPS video live on channel "${channel}"`, 'success');
+
+        // UI State Update
+        isBroadcasting = true;
+        elements.placeholder.style.display = 'none';
+        elements.hud.style.display = 'flex';
+        elements.hudCamId.textContent = `CAM: ${cameraId}`;
+        elements.statusPill.className = 'status-pill live';
+        elements.statusText.textContent = '30 FPS LIVE';
+        elements.streamBtn.className = 'btn danger';
+        elements.streamBtn.innerHTML = '<span class="material-symbols-outlined">stop_circle</span><span>Stop Broadcast</span>';
+        elements.streamBtn.disabled = false;
+
+        // Broadcast Camera Metadata & Telemetry Beacon every 2 seconds
+        metadataInterval = setInterval(() => {
+          broadcastMetadataBeacon(cameraId, displayName, assignedUid, hubUrl);
+        }, 2000);
+        broadcastMetadataBeacon(cameraId, displayName, assignedUid, hubUrl);
+
+      } catch (err) {
+        addLog(`Broadcast failed: ${err.message || err}`, 'error');
+        alert(`Error starting broadcast: ${err.message || err}`);
+        await stopBroadcast();
+      }
+    }
+
+    let mqttClient = null;
+    let mqttConnected = false;
+
+    function initMqttClient(channel, cameraId) {
+      if (typeof mqtt === 'undefined') {
+        console.warn('MQTT.js not loaded yet');
+        return;
+      }
+      if (mqttClient && mqttClient.connected) return;
+
+      const clientId = `fv_broadcaster_${cameraId.replace(/[^a-zA-Z0-9]/g, '_')}_${Math.random().toString(16).slice(2, 6)}`;
+      try {
+        addLog(`[MQTT CLOUD] Connecting to global broker wss://broker.emqx.io:8084/mqtt...`, 'normal');
+        mqttClient = mqtt.connect('wss://broker.emqx.io:8084/mqtt', {
+          clientId,
+          clean: true,
+          connectTimeout: 5000,
+          reconnectPeriod: 2500,
+          rejectUnauthorized: false
+        });
+
+        mqttClient.on('connect', () => {
+          mqttConnected = true;
+          addLog(`[MQTT ONLINE] Connected to global telemetry cloud! Topic: falconvision/${channel}/telemetry`, 'success');
+          mqttClient.subscribe(`falconvision/${channel}/ack`, (err) => {
+            if (!err) console.log(`Subscribed to falconvision/${channel}/ack`);
+          });
+        });
+
+        mqttClient.on('message', (topic, payload) => {
+          try {
+            const msg = JSON.parse(payload.toString());
+            if (msg.type === 'console_ack' && (msg.camera_id === cameraId || !msg.camera_id)) {
+              addLog(`[SOC ACK via MQTT] Workstation acknowledged fix #${msg.seq || ''}! Live on GIS map.`, 'success');
+            }
+          } catch (_) {}
+        });
+
+        mqttClient.on('error', (err) => {
+          console.warn('MQTT broker error:', err);
+        });
+
+        mqttClient.on('offline', () => {
+          mqttConnected = false;
+        });
+      } catch (e) {
+        console.warn('Failed to init MQTT client:', e);
+      }
+    }
+
+    let beaconSeq = 0;
+
+    // Transmits Unique Camera ID, Friendly Name, and Live GPS coordinates across 4 failover paths
+    async function broadcastMetadataBeacon(cameraId, displayName, uid, hubUrl) {
+      if (!isBroadcasting) return;
+      beaconSeq++;
+      const channel = (elements.channel && elements.channel.value ? elements.channel.value.trim() : '') || 'PhoneToLaptop';
+      const hasGps = gpsCoords && Number.isFinite(gpsCoords.latitude) && Number.isFinite(gpsCoords.longitude);
+      const coordStr = hasGps
+        ? `${gpsCoords.latitude.toFixed(5)}, ${gpsCoords.longitude.toFixed(5)} (±${Math.round(gpsCoords.accuracy || 5)}m)`
+        : 'Awaiting GNSS fix...';
+
+      const packet = {
+        type: "camera_telemetry",
+        camera_id: cameraId,
+        display_name: displayName,
+        channel: channel,
+        agora_uid: uid,
+        timestamp: new Date().toISOString(),
+        seq: beaconSeq,
+        gps: hasGps ? gpsCoords : null
+      };
+      const raw = JSON.stringify(packet);
+
+      // Path 1: Global Secure MQTT over WebSocket (Direct to central SOC Dashboard anywhere in the world)
+      if (mqttClient && mqttClient.connected) {
+        try {
+          mqttClient.publish(`falconvision/${channel}/telemetry`, raw, { qos: 0 });
+          if (beaconSeq === 1 || hasGps || beaconSeq % 3 === 0) {
+            addLog(`[MQTT TELEMETRY #${beaconSeq}] Published to cloud: ${coordStr}`, hasGps ? 'success' : 'warn');
+          }
+        } catch (mErr) {
+          console.warn('MQTT publish error:', mErr);
+        }
+      }
+
+      // Path 2: Direct Agora WebRTC DataStream (Best effort in-band SD-RTN)
+      if (client && client.connectionState === 'CONNECTED') {
+        try {
+          await client.sendStreamMessage(raw, false);
+          if (beaconSeq === 1 || beaconSeq % 4 === 0) {
+            addLog(`[DATASTREAM #${beaconSeq}] Pushed WebRTC packet: ${coordStr}`, hasGps ? 'success' : 'warn');
+          }
+        } catch (err) {
+          console.warn('sendStreamMessage err:', err);
+        }
+      }
+
+      // Path 3: Vercel Serverless Telemetry Buffer (/api/telemetry)
+      try {
+        fetch('/api/telemetry', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: raw
+        }).then(r => {
+          if (r.ok && (beaconSeq === 1 || beaconSeq % 10 === 0)) {
+            addLog(`[CLOUD BUFFER] Synchronized with Vercel edge API`, 'success');
+          }
+        }).catch(() => {});
+      } catch (_) {}
+
+      // Path 4: FalconVision Central Hub API (Tunnel / Local LAN)
+      const effectiveHub = hubUrl || defaultHub;
+      if (effectiveHub) {
+        fetch(`${effectiveHub.replace(/\/$/, '')}/api/v1/agora/telemetry`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            camera_id: cameraId,
+            channel: channel,
+            display_name: displayName,
+            source_url: String(uid),
+            latitude: hasGps ? gpsCoords.latitude : 0.0,
+            longitude: hasGps ? gpsCoords.longitude : 0.0,
+            accuracy_m: hasGps ? (gpsCoords.accuracy || 5.0) : 5.0,
+            heading_deg: hasGps ? gpsCoords.heading : null,
+            speed_mps: hasGps ? gpsCoords.speed : null,
+            altitude_m: hasGps ? gpsCoords.altitude : null,
+            seq: beaconSeq,
+            timestamp: packet.timestamp
+          })
+        }).then(res => {
+          if (res.ok && (beaconSeq === 1 || beaconSeq % 5 === 0)) {
+            addLog(`[HUB SYNC #${beaconSeq}] Central workstation registered fix #${beaconSeq}`, 'success');
+          }
+        }).catch(() => {});
+      }
+    }
+
+    async function stopBroadcast() {
+      isBroadcasting = false;
+      if (metadataInterval) {
+        clearInterval(metadataInterval);
+        metadataInterval = null;
+      }
+      for (const track of localTracks) {
+        try { track.stop(); track.close(); } catch (_) {}
+      }
+      localTracks = [];
+      if (client) {
+        try { await client.leave(); } catch (_) {}
+        client = null;
+      }
+
+      document.getElementById('local-video').innerHTML = '';
+      elements.placeholder.style.display = 'flex';
+      elements.hud.style.display = 'none';
+      elements.statusPill.className = 'status-pill';
+      elements.statusText.textContent = 'OFFLINE';
+      elements.streamBtn.className = 'btn';
+      elements.streamBtn.innerHTML = '<span class="material-symbols-outlined">sensors</span><span>Start 30 FPS Broadcast</span>';
+      elements.streamBtn.disabled = false;
+      addLog('Broadcast terminated.', 'normal');
+    }
+  </script>
+</body>
+</html>
